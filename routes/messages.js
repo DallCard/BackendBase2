@@ -1,5 +1,4 @@
 const {Router} = require("express")
-
 const router = Router()
 
 const {
@@ -19,9 +18,9 @@ router.get("/hi", hiMessage) // End Point
 
 router.get("/bye",byeMessage  ) // End Point
 
-router.post('/', postMessage)
-router.put('/', putMessage)
-router.delete('/', deleteMessage)
+router.post('/', postMessage) // crear o añadir
+router.put('/', putMessage) //  actualizar registro en la bd
+router.delete('/', deleteMessage) // eliminar registros
 
 
 

@@ -8,7 +8,7 @@ const rootMessage = (req=request, res=response) =>{
    }*/
 
    if(!texto1){
-    res.status(200).json({msg: "Falata el parametro Texto1"})}
+    res.status(200).json({msg: "Falta el parametro Texto1"})}
 
     if(!texto2){
         res.status(400).json({msg:   "Falta el parametro Texto2"})}
@@ -17,7 +17,9 @@ const rootMessage = (req=request, res=response) =>{
     }
 
 const hiMessage =  (req=request, res=response) =>{
-    res.status(405).json({msg:"Hola Mundo"})}
+    const {name} = req.params
+   /* console.log(req.params)*/
+    res.status(405).json({msg:'Hola ' + name })}
 
 const byeMessage = (req=request, res=response) =>{
     res.status(418).json({msg:"Adios mundo"})}
