@@ -25,7 +25,13 @@ const byeMessage = (req=request, res=response) =>{
     res.status(418).json({msg:"Adios mundo"})}
 
 const postMessage= (req=request, res=response) =>{
-    res.status(400).json({msg:"Mensajes Post"})}
+    const { no_control, nombre } =req.body
+   // console.log({no_control, nombre})
+    res.json({
+        msg:`numero de control= ${no_control}, nombre = ${nombre}`
+    })
+   // res.status(400).json({msg:"Mensajes Post"})
+}
 
 const putMessage= (req=request, res=response) =>{
     res.status(407).json({msg:"Mensajes PUT"})}
