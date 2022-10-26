@@ -1,5 +1,6 @@
 const {request, response } = require ("express");
-const pool = require ("../db/connection")
+const pool = require ("../db/connection");
+const { use } = require("../routes/usuarios");
 const getUsers = async (req = request, res = response) => {
     let conn;
     try {
@@ -62,4 +63,80 @@ const deleteUserByID = async (req = request, res = response) => {
         }
     }
 }
-module.exports = {getUsers, getUserByID, deleteUserByID }
+
+
+const addUser= async (req = request, res = response) => {
+    const {
+        Usuario, 
+        Nombre,
+        Apellidos,
+        Edad,
+        Genero,
+        Contraseña,
+        Fecha_Nacimiento = '1900-01-01',
+        Activo
+  
+} = req.body
+
+if(
+    !Usuario|| 
+    !Nombre||
+    !Apellidos||
+    !Edad||
+    !Contraseña||
+    !Activo
+
+) {
+    res.status(400). json({msg: "Falta informacion del Usuario"})
+    return
+}
+    let conn;
+    try {
+        conn = await pool.getConnection()
+        const [user] = await conn.query(`SELECT Usuario FROM Usuarios WHERE Usuario = '${Usuario}'`)
+       
+        if (user){
+            res.status(403).json({msg: `El usuario ${Usuario} ya se encuentra registrado `})
+            return
+        }    
+        const {affectedRows}= await conn.query(`
+    INSERT INTO Usuarios(
+        Usuario,
+        Nombre,
+        Apellidos,
+        Edad,
+        Genero,
+        Contraseña,
+        Fecha_Nacimiento,
+        Activo
+
+    ) VALUES (
+        '${Usuario}',
+        '${Nombre}',
+        '${Apellidos}',
+         ${Edad},
+        '${Genero || ''}',
+        '${Contraseña}',
+        '${Fecha_Nacimiento}', 
+        '${Activo}'
+
+       
+    )
+`, 
+        (error) => {throw new Error(error)})
+        //consle.log(userDelete)
+        if (affectedRows === 0){
+            res.status(404).json({msg: `No se pudo agregar el registro del usuario ${Usuario}`})
+            return
+        }    
+        res.json({msg: `el usuario ${Usuario}se agrego correctamente`}) 
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({error})
+    } finally{
+        if (conn){
+            conn.end()
+        }
+    }
+}
+module.exports = {getUsers, getUserByID, deleteUserByID, addUser }
