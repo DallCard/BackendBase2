@@ -1,6 +1,7 @@
 const {request, response } = require ("express");
+const bcryptjs =require ("bcryptjs")
 const pool = require ("../db/connection");
-const { use } = require("../routes/usuarios");
+//const { use } = require("../routes/usuarios");
 const getUsers = async (req = request, res = response) => {
     let conn;
     try {
@@ -101,6 +102,11 @@ if(
             res.status(403).json({msg: `El usuario ${Usuario} ya se encuentra registrado `})
             return
         }    
+
+        const salt  = bcryptjs.genSaltSync()
+        const contraseñaCifrada = bcryptjs.hashSync(Contraseña, salt)
+
+
         const {affectedRows}= await conn.query(`
     INSERT INTO Usuarios(
         Usuario,
@@ -118,7 +124,7 @@ if(
         '${Apellidos}',
          ${Edad},
         '${Genero || ''}',
-        '${Contraseña}',
+        '${contraseñaCifrada}',
         '${Fecha_Nacimiento}', 
         '${Activo}'
 
@@ -184,7 +190,9 @@ if(
             return
         }    
         const {affectedRows}= await conn.query(`
-    UPDATE Usuarios SET
+   
+   
+        UPDATE Usuarios SET
     
         Nombre= '${Nombre || user.Nombre}',
         Apellidos= '${Apellidos || user.Apellidos}',
@@ -211,4 +219,50 @@ if(
         }
     }
 }
-module.exports = {getUsers, getUserByID, deleteUserByID, addUser, updateUserByUsuario }
+
+
+const signIn = async (req=request,res=response)=>{
+    const {
+        Usuario,
+        Contraseña
+    }=req.body
+
+    if(
+        !Usuario||
+        !Contraseña
+    ){
+        res.status(400).json({msg:"Falta información del usuario."})
+        return
+    }
+
+    let conn;
+
+    try{
+        conn = await pool.getConnection()
+        const [user]=await conn.query(`SELECT Usuario, Contraseña, Activo FROM Usuarios WHERE Usuario = '${Usuario}'`)
+
+        if(!user || user.Activo == 'N'){
+            let code = !user ? 1: 2;
+            res.status(403).json({msg:`El usuario o la contraseña son incorrectos`,errorCode:code})
+            return
+        }
+
+        const accesoValido = bcryptjs.compareSync(Contraseña,user.Contraseña)
+
+        if(!accesoValido){
+            res.status(403).json({msg:`El usuario o la contraseña son incorrectos`,errorCode:"3"})
+            return
+        }
+
+
+        res.json({msg:`El usuario ${Usuario} ha iniciado seción satisfactoriamenente`})
+    }catch(error){
+        console.log(error)
+        res.status(500).json({error})
+    }finally{
+        if(conn){
+            conn.end()
+        }
+    }
+}
+module.exports = {getUsers, getUserByID, deleteUserByID, addUser, updateUserByUsuario, signIn}
