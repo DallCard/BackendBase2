@@ -117,7 +117,6 @@ if(
         Contraseña,
         Fecha_Nacimiento,
         Activo
-
     ) VALUES (
         '${Usuario}',
         '${Nombre}',
@@ -127,7 +126,6 @@ if(
         '${contraseñaCifrada}',
         '${Fecha_Nacimiento}', 
         '${Activo}'
-
        
     )
 `, 
@@ -200,7 +198,6 @@ if(
         Genero= '${Genero || user.Genero }',
         Fecha_Nacimiento=  '${Fecha_Nacimiento }'
         WHERE Usuario = '${Usuario}'
-
 `, 
         (error) => {throw new Error(error)})
 
@@ -265,4 +262,73 @@ const signIn = async (req=request,res=response)=>{
         }
     }
 }
-module.exports = {getUsers, getUserByID, deleteUserByID, addUser, updateUserByUsuario, signIn}
+
+
+const newPassword = async (req=request,res=response)=>{
+    const {
+        Usuario,
+        AContraseña,
+        NContraseña
+    }=req.body
+
+    if(
+        !Usuario||
+        !AContraseña||
+        !NContraseña
+    ){
+        res.status(400).json({msg:"Faltan informacion del usuario."})
+        return
+    }
+
+    let conn;
+
+    try{
+        conn = await pool.getConnection()
+        const [user]=await conn.query(`SELECT Usuario, Contraseña, Activo FROM Usuarios WHERE Usuario = '${Usuario}'`)
+
+        if(!user || user.Activo == 'N'){
+            let code = !user ? 1: 2;
+            res.status(403).json({msg:`El usuario o la contraseña son incorrectos`,errorCode:code})
+            return
+        }
+
+        const accesoValido = bcryptjs.compareSync(AContraseña,user.Contraseña)
+
+        if(!accesoValido){
+            res.status(403).json({msg:`El usuario o la contraseña son incorrectos`,errorCode:"3"})
+            return
+        }
+        
+        const salt  = bcryptjs.genSaltSync()
+        const contraseñaCifrada = bcryptjs.hashSync(NContraseña, salt)
+
+
+
+        const {affectedRows}= await conn.query(`
+   
+   
+        UPDATE Usuarios SET
+    
+        contraseña= '${contraseñaCifrada}'
+        WHERE Usuario = '${Usuario}'
+`, 
+        (error) => {throw new Error(error)})
+
+        //consle.log(userDelete)
+        if (affectedRows === 0){
+            res.status(404).json({msg: `No se pudo actualizar el registro del usuario ${Usuario}`})
+            return
+        }    
+        res.json({msg: `el usuario ${Usuario} se actualizo correctamente`}) 
+    }catch(error){
+        console.log(error)
+        res.status(500).json({error})
+    }finally{
+        if(conn){
+            conn.end()
+        }
+    }
+}
+
+
+module.exports = {getUsers, getUserByID, deleteUserByID, addUser, updateUserByUsuario, signIn, newPassword}
